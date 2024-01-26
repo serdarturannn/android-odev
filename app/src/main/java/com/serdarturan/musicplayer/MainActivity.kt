@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomSheetScaffold
+import androidx.compose.material.Button
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -44,7 +45,7 @@ class MainActivity : ComponentActivity(), EasyPermissions.PermissionCallbacks {
     private fun setupUI() {
         setContent {
             val musicFiles = helper.getMusicFiles(this)
-            viewModel.setMusicFiles(musicFiles)
+            viewModel.setMusicFiles(musicFiles, this)
             val scaffoldState = rememberBottomSheetScaffoldState()
             val coroutineScope = rememberCoroutineScope()
             val isMusicPlaying = remember { mutableStateOf(false) }
@@ -76,6 +77,9 @@ class MainActivity : ComponentActivity(), EasyPermissions.PermissionCallbacks {
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
+                        Button(onClick = { viewModel.toggleShowFavorites() }) {
+                            Text(if (viewModel.showingFavorites.value) "Show All Music" else "Show PlayList")
+                        }
                         TextField(
                             value = searchQuery.value,
                             onValueChange = { query ->
@@ -87,9 +91,13 @@ class MainActivity : ComponentActivity(), EasyPermissions.PermissionCallbacks {
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp)
                         )
-                        MusicListUI(viewModel.filteredMusicFiles.value) { music ->
-                            viewModel.playMusic(music)
-                        }
+                        MusicListUI(
+                            viewModel.filteredMusicFiles.value,
+                            onMusicClick = { music -> viewModel.playMusic(music) },
+                            onFavoriteClick = { music -> viewModel.toggleFavorite(music, applicationContext) }
+                        )
+
+
                     }
                 }
             )

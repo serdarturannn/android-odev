@@ -1,3 +1,3 @@
 package com.serdarturan.musicplayer
 
-class Music(val name: String, val path: String)
+data class Music(val name: String, val path: String, var isFavorite: Boolean = false)

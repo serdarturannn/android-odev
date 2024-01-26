@@ -1,6 +1,8 @@
 package com.serdarturan.musicplayer
 
+import android.content.Context
 import android.media.MediaPlayer
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -21,6 +23,7 @@ class MusicViewModel : ViewModel() {
     val currentMusicName = mutableStateOf("")
     val currentPosition = mutableStateOf(0)
     val musicDuration = mutableStateOf(0)
+    var showingFavorites = mutableStateOf(false)
 
     private var currentSearchQuery = ""
 
@@ -29,8 +32,9 @@ class MusicViewModel : ViewModel() {
     }
 
 
-    fun setMusicFiles(files: List<Music>) {
-        musicFiles = files
+    fun setMusicFiles(files: List<Music>, context: Context) {
+        val favorites = SharedPreferencesHelper.loadFavorites(context)
+        musicFiles = files.map { it.copy(isFavorite = favorites.contains(it.path)) }
         applySearchQuery()
     }
 
@@ -40,11 +44,26 @@ class MusicViewModel : ViewModel() {
     }
 
     private fun applySearchQuery() {
-        _filteredMusicFiles.value = if (currentSearchQuery.isEmpty()) {
-            musicFiles
+        _filteredMusicFiles.value = if (showingFavorites.value) {
+            musicFiles.filter { it.isFavorite }
         } else {
-            musicFiles.filter { it.name.contains(currentSearchQuery, ignoreCase = true) }
+            if (currentSearchQuery.isEmpty()) {
+                musicFiles
+            } else {
+                musicFiles.filter { it.name.contains(currentSearchQuery, ignoreCase = true) }
+            }
         }
+    }
+
+
+
+    fun toggleFavorite(music: Music, context: Context) {
+        musicFiles = musicFiles.map {
+            if (it == music) it.copy(isFavorite = !it.isFavorite) else it
+        }
+        _filteredMusicFiles.value = musicFiles.toList()
+        val favorites = musicFiles.filter { it.isFavorite }.map { it.path }.toSet()
+        SharedPreferencesHelper.saveFavorites(context, favorites)
     }
 
 
@@ -118,4 +137,10 @@ class MusicViewModel : ViewModel() {
     private fun updateCurrentPosition() {
         currentPosition.value = (mediaPlayer?.currentPosition?.minus(1)) ?: 0
     }
+
+    fun toggleShowFavorites() {
+        showingFavorites.value = !showingFavorites.value
+        applySearchQuery()
+    }
+
 }
